@@ -1,26 +1,61 @@
 #!/bin/sh -ex
 set -e
-losetup /dev/loop5 && exit 1 || true
-image=arch-linux-rPI.img
+
+IMAGE=arch-linux-rPI.img
+
 if [ ! -f "ArchLinuxARM-rpi-latest.tar.gz" ]; then
   wget -N http://archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
 fi
-truncate -s 2G $image
-losetup /dev/loop5 $image
-parted -s /dev/loop5 mklabel msdos
-parted -s /dev/loop5 unit MiB mkpart primary fat32 -- 1 32
-parted -s /dev/loop5 set 1 boot on
-parted -s /dev/loop5 unit MiB mkpart primary ext2 -- 32 -1
-parted -s /dev/loop5 print
-mkfs.vfat -n SYSTEM /dev/loop5p1
-mkfs.ext4 -L root -b 4096 -E stride=4,stripe_width=1024 /dev/loop5p2
+
+truncate -s 2G $IMAGE
+
+LOOP=`sudo losetup -f --show $IMAGE`
+
+sleep 1
+echo "Partitioning $LOOP"
+
+sudo parted -s $LOOP mklabel msdos
+sudo parted -s $LOOP unit MiB mkpart primary fat32 -- 1 32
+sudo parted -s $LOOP set 1 boot on
+sudo parted -s $LOOP unit MiB mkpart primary ext2 -- 32 -1
+sudo parted -s $LOOP print
+
+sleep 3
+
+LOOP_BOOT="$LOOP"p1
+LOOP_ROOT="$LOOP"p2
+
+echo $LOOP_BOOT
+
+echo "Formatting $LOOP_BOOT boot partition"
+sudo mkfs.vfat -n SYSTEM $LOOP_BOOT
+
+echo "Formatting $LOOP_ROOT root partition"
+sudo mkfs.ext4 -L root -b 4096 -E stride=4,stripe_width=1024 $LOOP_ROOT
+
+sleep 1
+
+echo "Mounting $LOOP_BOOT as boot"
 mkdir -p arch-boot
-mount /dev/loop5p1 arch-boot
+sudo mount $LOOP_BOOT arch-boot
+
+echo "Mounting $LOOP_ROOT as root"
 mkdir -p arch-root
-mount /dev/loop5p2 arch-root
-bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C arch-root
-sed -i "s/ defaults / defaults,noatime /" arch-root/etc/fstab
-mv arch-root/boot/* arch-boot/
-umount arch-boot arch-root
-losetup -d /dev/loop5
-rm -r arch-boot arch-root
+sudo mount $LOOP_ROOT arch-root
+
+echo "Extracting ArchLinuxARM files to root"
+sudo bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C arch-root
+
+sudo sed -i "s/ defaults / defaults,noatime /" arch-root/etc/fstab
+
+cat | sudo tee arch-root/etc/udev/rules.d/90-qemu.rules <<EOF 
+KERNEL=="sda", SYMLINK+="mmcblk0"
+KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
+KERNEL=="sda2", SYMLINK+="root"
+EOF
+
+sudo mv arch-root/boot/* arch-boot/
+sudo umount arch-boot arch-root
+
+sudo losetup -d $LOOP
+sudo rm -r arch-boot arch-root
