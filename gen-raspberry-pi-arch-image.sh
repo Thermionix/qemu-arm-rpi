@@ -35,27 +35,32 @@ sudo mkfs.ext4 -L root -b 4096 -E stride=4,stripe_width=1024 $LOOP_ROOT
 
 sleep 1
 
-echo "Mounting $LOOP_BOOT as boot"
-mkdir -p arch-boot
-sudo mount $LOOP_BOOT arch-boot
+TMP_BOOT=/tmp/arch-boot
+TMP_ROOT=/tmp/arch-root
 
-echo "Mounting $LOOP_ROOT as root"
-mkdir -p arch-root
-sudo mount $LOOP_ROOT arch-root
+echo "Mounting $LOOP_BOOT at $TMP_BOOT"
+mkdir -p $TMP_BOOT
+sudo mount $LOOP_BOOT $TMP_BOOT
+
+echo "Mounting $LOOP_ROOT at $TMP_ROOT"
+mkdir -p $TMP_ROOT
+sudo mount $LOOP_ROOT $TMP_ROOT
 
 echo "Extracting ArchLinuxARM files to root"
-sudo bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C arch-root
+sudo bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C $TMP_ROOT
 
-sudo sed -i "s/ defaults / defaults,noatime /" arch-root/etc/fstab
+sudo sed -i "s/ defaults / defaults,noatime /" $TMP_ROOT/etc/fstab
 
-cat | sudo tee arch-root/etc/udev/rules.d/90-qemu.rules <<EOF 
+#sudo sed -e '/^\/usr\/lib\/arm-linux-gnueabihf\/libcofi_rpi.so/ s/^/#/' -i $TMP_ROOT/etc/ld.so.preload
+
+cat << EOF | sudo tee $TMP_ROOT/etc/udev/rules.d/90-qemu.rules 
 KERNEL=="sda", SYMLINK+="mmcblk0"
 KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
 KERNEL=="sda2", SYMLINK+="root"
 EOF
 
-sudo mv arch-root/boot/* arch-boot/
-sudo umount arch-boot arch-root
+sudo mv $TMP_ROOT/boot/* $TMP_BOOT/
+sudo umount $TMP_BOOT $TMP_ROOT
 
 sudo losetup -d $LOOP
-sudo rm -r arch-boot arch-root
+sudo rm -r $TMP_BOOT $TMP_ROOT
