@@ -7,7 +7,7 @@ qemu-system-arm \
 -no-reboot \
 -serial stdio \
 -net nic -net user \
--append "root=/dev/sda2 rootfstype=ext4 rw panic=1 console=ttyAMA0" \
--hda arch-linux-rPI-20150815.img \
+-append "root=/dev/mmcblk0p2 rootfstype=ext4 rw panic=1 console=ttyAMA0" \
+-drive if=sd,cache=writeback,file=arch-linux-rPI.img \
 -kernel kernel-qemu
 

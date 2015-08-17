@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 set -e
 
-command -v mkfs.vfat > /dev/null || { echo "## please install mkfs.vfat (pkg exfat-utils)" ; exit 1 ; }
+command -v mkfs.vfat > /dev/null || { echo "## please install mkfs.vfat (pkg dosfstools)" ; exit 1 ; }
 
 IMAGE=arch-linux-rPI.img
 
@@ -55,11 +55,11 @@ sudo sed -i "s/ defaults / defaults,noatime /" $TMP_ROOT/etc/fstab
 
 #sudo sed -e '/^\/usr\/lib\/arm-linux-gnueabihf\/libcofi_rpi.so/ s/^/#/' -i $TMP_ROOT/etc/ld.so.preload
 
-cat << EOF | sudo tee $TMP_ROOT/etc/udev/rules.d/90-qemu.rules 
-KERNEL=="sda", SYMLINK+="mmcblk0"
-KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
-KERNEL=="sda2", SYMLINK+="root"
-EOF
+#cat << EOF | sudo tee $TMP_ROOT/etc/udev/rules.d/90-qemu.rules 
+#KERNEL=="sda", SYMLINK+="mmcblk0"
+#KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
+#KERNEL=="sda2", SYMLINK+="root"
+#EOF
 
 sudo mv $TMP_ROOT/boot/* $TMP_BOOT/
 sudo umount $TMP_BOOT $TMP_ROOT
