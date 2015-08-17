@@ -1,3 +1,4 @@
 arch-linux-rPI.img
 ArchLinuxARM-rpi-latest.tar.gz
-
+raspberrypi-linux-git
+kernel-qemu
