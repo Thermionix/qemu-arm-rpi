@@ -1,6 +1,8 @@
 #!/bin/sh -ex
 set -e
 
+command -v mkfs.vfat > /dev/null || { echo "## please install mkfs.vfat (pkg exfat-utils)" ; exit 1 ; }
+
 IMAGE=arch-linux-rPI.img
 
 if [ ! -f "ArchLinuxARM-rpi-latest.tar.gz" ]; then

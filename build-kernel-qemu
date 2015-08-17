@@ -5,12 +5,15 @@
 set -e
 
 TOOLCHAIN=arm-frc-linux-gnueabi
+BRANCH="rpi-4.0.y"
 
 command -v "${TOOLCHAIN}-gcc" > /dev/null || { echo "## please install cross compiling toolchain" ; exit 1 ; }
 
 if [ ! -d "raspberrypi-linux-git" ]; then
-  git clone --depth 1 git://github.com/raspberrypi/linux.git raspberrypi-linux-git
+  git clone --depth 1 -b $BRANCH git://github.com/raspberrypi/linux.git raspberrypi-linux-git
 fi
+
+# print version
 
 WORKDIR="/tmp/kernel-qemu-compile"
 
